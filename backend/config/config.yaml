@@ -1,0 +1,11 @@
+monolog:
+  channels: ['db']
+  handlers:
+    db:
+      channels: ['db']
+      type: service
+      public: true
+      id: app.monolog.db_handler
+
+
+
