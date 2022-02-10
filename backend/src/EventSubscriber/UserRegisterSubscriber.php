@@ -11,6 +11,7 @@ use Monolog\Logger;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
 use Symfony\Component\HttpKernel\Event\ViewEvent;
@@ -28,9 +29,9 @@ class UserRegisterSubscriber implements EventSubscriberInterface
 
     public function __construct(
         UserPasswordEncoderInterface $passwordEncoder,
-        TokenGenerator $tokenGenerator,
-        ConfirmationMail $mailer,
-        LoggerInterface $logger
+        TokenGenerator               $tokenGenerator,
+        ConfirmationMail             $mailer,
+        LoggerInterface              $logger
     )
     {
         $this->passwordEncoder = $passwordEncoder;
@@ -43,7 +44,7 @@ class UserRegisterSubscriber implements EventSubscriberInterface
     public static function getSubscribedEvents(): array
     {
         return [
-            KernelEvents::VIEW => ['userRegistered', EventPriorities::PRE_WRITE]
+            KernelEvents::VIEW => ['userRegistered', EventPriorities::PRE_WRITE],
         ];
     }
 
@@ -57,20 +58,28 @@ class UserRegisterSubscriber implements EventSubscriberInterface
             return;
         }
 
-        // it is a user, we need to hash the password here
         $user->setPassword(
             $this->passwordEncoder->encodePassword($user, $user->getPassword())
         );
 
-        $user->setConfirmationToken(
-            $this->tokenGenerator->getRandomSecureToken()
-        );
 
         $user->setRoles([$parameters['roles']]);
+        $user->setOrganization($parameters['organization']);
+        $user->setFullyRegistered($parameters['fullyRegistered']);
 
-        $this->mailer->sendConfirmationEmail($user);
+        /*
+         * Only when the user is not fully registered we set a secure token, otherwise we`ll overwrite it
+         */
 
+        if (!$user->getFullyRegistered()) {
 
-//        var_dump('a trecut de logger');die;
+            $user->setConfirmationToken(
+                $this->tokenGenerator->getRandomSecureToken(30)
+            );
+        }
+
+        if ($user->getFullyRegistered()) {
+            $this->mailer->sendConfirmationEmail($user);
+        }
     }
 }

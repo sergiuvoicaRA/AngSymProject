@@ -12,6 +12,7 @@ import { HttpClientModule } from '@angular/common/http';
 import { AgGridModule } from 'ag-grid-angular';
 import { BtnCellRenderer } from './button-cell-renderer.component';
 import { NgbdModalBasicModule } from './modal-basic/modal-basic.module';
+import { StatusRenderer } from './status-renderer-component';
 
 @NgModule({
   declarations: [
@@ -21,6 +22,7 @@ import { NgbdModalBasicModule } from './modal-basic/modal-basic.module';
     HomeComponent,
     NavComponent,
     BtnCellRenderer,
+    StatusRenderer
   ],
   imports: [
     BrowserModule,
@@ -28,7 +30,7 @@ import { NgbdModalBasicModule } from './modal-basic/modal-basic.module';
     FormsModule,
     ReactiveFormsModule,
     HttpClientModule,
-    AgGridModule.withComponents([BtnCellRenderer]),
+    AgGridModule.withComponents([BtnCellRenderer, StatusRenderer]),
     NgbdModalBasicModule,
   ],
   providers: [],

@@ -35,13 +35,13 @@ class UserConfirmationService
 
     public function confirmUser(string $confirmationToken)
     {
-        $this->container->get('monolog.db_handler')->info('User confirmed', [
-            'message' => 'message1',
-            'level' => 'level1',
-            'level_name' => 'slsdlsl',
-            'extra' => 'extra',
-            'context' => 'context',
-        ]);die;
+//        $this->container->get('monolog.db_handler')->info('User confirmed', [
+//            'message' => 'message1',
+//            'level' => 'level1',
+//            'level_name' => 'slsdlsl',
+//            'extra' => 'extra',
+//            'context' => 'context',
+//        ]);
 
         $user = $this->userRepository->findOneBy(
             ['confirmationToken' => $confirmationToken]
@@ -54,7 +54,5 @@ class UserConfirmationService
         $user->setEnabled(true);
         $user->setConfirmationToken(null);
         $this->entityManager->flush();
-
-
     }
 }

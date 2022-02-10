@@ -6,6 +6,7 @@ import { BtnCellRenderer } from '../button-cell-renderer.component';
 
 import { Emitters } from '../emitters/emitters';
 import { NgbdModalBasic } from '../modal-basic/modal-basic';
+import { StatusRenderer } from '../status-renderer-component';
 
 @Component({
   selector: 'app-home',
@@ -31,6 +32,7 @@ export class HomeComponent implements OnInit {
   ) {
     this.frameworkComponents = {
       buttonRenderer: BtnCellRenderer,
+      statusRenderer: StatusRenderer,
     }
     this.modal = { NgbdModalBasic: NgbdModalBasic}
   }
@@ -39,11 +41,38 @@ export class HomeComponent implements OnInit {
     { headerName: "Index", valueGetter: "node.rowIndex + 1", width: 60 },
     { headerName: "Id", field:"id", sortable: true, filter: true, width: 80, hide: true},
     { headerName: "Name", field: "name", sortable: true, filter: true, editable: true},
-    { headerName: "Email", field: "email", sortable: true, filter: true, editable: true },
+    { headerName: "Email", field: "email", sortable: true, filter: true, width: 250, editable: true },
     { headerName: "Personal Info", field: "personalInfo", sortable: true, filter: true, editable: true },
-    { headerName: "Role", field: "role", sortable: true, filter: true, width: 100, editable: true },
-    { headerName: "Organization", field: "organization", sortable: true, filter: true, editable: true },
-    { headerName: "Status", field: "status", sortable: true, filter: true, width: 80, editable: true },
+    { 
+      headerName: "Role", 
+      field: "roles", 
+      sortable: true, 
+      filter: true, 
+      width: 140, 
+      editable: true,
+      cellRenderer: 'statusRenderer',
+      cellEditor: 'agSelectCellEditor',
+      cellEditorParams: {
+        cellRenderer: 'statusRenderer',
+        values: ['ADMINISTRATOR', 'MANAGER', 'DEVELOPER', 'SUPPLIER'],
+      },
+    },
+    { headerName: "Organization", field: "organization", sortable: true, filter: true, width: 250, editable: true },
+    { 
+      headerName: "Status", 
+      field: "status", 
+      sortable: true, 
+      filter: true, 
+      width: 80, 
+      editable: true, 
+      flex: 1,
+      cellRenderer: 'statusRenderer',
+      cellEditor: 'agSelectCellEditor',
+      cellEditorParams: {
+        cellRenderer: 'statusRenderer',
+        values: ['ACTIVE', 'INACTIVE'],
+      },
+    },
   ];
   
   rowData: any;
@@ -87,17 +116,20 @@ export class HomeComponent implements OnInit {
   }
 
   onCellValueChanged(event: any) {
+    if(event.data.status === 'ACTIVE') {
+      console.log(event);
+    }
+
     this.editPartner(event.data);
   }
 
-  addItem(newItem: object) {
-    this.http.post('http://localhost:8000/dashboard/add', newItem).subscribe(() => this.updateTable());
-
-    // let newRowData = this.rowData.slice();
-    // // const newItem = { id: '', name: '', email: '', personalInfo: '', role: '', organization: '', status: '' };
-    // newRowData.push(newItem);
-
-    // this.rowData = newRowData;
+  addItem(newItem: any) {
+    newItem.username = `Username${Math.floor(Math.random() * (9999999 - 1000000) + 1000000)}`;
+    newItem.password = 'Password123';
+    newItem.retypedPassword = newItem.password;
+    this.http.post('http://localhost:8000/api/users', newItem).subscribe((res) => {
+      this.updateTable()
+  });
   }
 
   editPartner(data: any) {
@@ -118,17 +150,24 @@ export class HomeComponent implements OnInit {
           return i.id === element.id;
         }), 1);
 
-        this.http.delete(`http://localhost:8000/dashboard/delete/${element.id}`)
+        this.http.delete(`http://localhost:8000/api/users/${element.id}`)
           .subscribe(() => this.updateTable())
       });
     }
   }
 
   updateTable() {
-    // this.api.refreshCells();
-    this.http.get('http://localhost:8000/dashboard/').subscribe(
+    let options = { headers: new HttpHeaders({
+      'Authorization':`Bearer ${this.token}`,
+      })
+    };
+
+    this.http.get('http://localhost:8000/api/users', options).subscribe(
       (res: any)=> {
-        this.rowData = res;
+        // res['hydra:member'].forEach((e: any) => {
+        //   e.roles = e.roles.replace('ROLE_', '').toUpperCase();
+        // });
+        this.rowData = res['hydra:member'];
       }
     );
   }

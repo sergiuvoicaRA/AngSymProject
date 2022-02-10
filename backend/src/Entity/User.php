@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use ApiPlatform\Core\Annotation\ApiResource;
 use App\Repository\UserRepository;
+use App\Security\TokenGenerator;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -14,24 +15,33 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 
 /**
  * @ApiResource(
- *     itemOperations={
- *      "get"={
- *          "access_control"="is_granted('IS_AUTHENTICATED_FULLY')",
- *           "normalization_context"={
- *              "groups"={"get"}
- *           }
- *     },
- *     "put"={
- *          "access_control"="is_granted('IS_AUTHENTICATED_FULLY') and object == user",
- *          "denormalization_context"={
- *              "groups"={"put"}
+ *      itemOperations={
+ *          "get"={
+ *              "access_control"="is_granted('IS_AUTHENTICATED_FULLY')",
+ *              "normalization_context"={
+ *                  "groups"={"get"}
+ *               }
  *          },
- *           "normalization_context"={
- *              "groups"={"get"}
- *           }
- *     }
- *  },
+ *          "put"={
+ *              "access_control"="is_granted('IS_AUTHENTICATED_FULLY') and object == user",
+ *              "denormalization_context"={
+ *                   "groups"={"put"}
+ *              },
+ *              "normalization_context"={
+ *                  "groups"={"get"}
+ *               }
+ *          },
+ *          "delete"={
+ *              "access_control"="is_granted('IS_AUTHENTICATED_FULLY') and object == user",
+ *          }
+ *      },
  *     collectionOperations={
+ *          "get"={
+ *              "access_control"="is_granted('ROLE_ADMINISTRATOR')",
+ *              "normalization_context"={
+ *                  "groups"={"get"}
+ *              },
+ *          },
  *          "post"={
  *              "denormalization_context"={
  *                  "groups"={"post"}
@@ -48,6 +58,8 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
  */
 class User implements UserInterface
 {
+    private $tokenGenerator;
+
     const ROLE_ADMINISTRATOR = 'ROLE_ADMINISTRATOR';
     const ROLE_MANAGER = 'ROLE_MANAGER';
     const ROLE_SUPPLIER = 'ROLE_SUPPLIER';
@@ -65,7 +77,7 @@ class User implements UserInterface
 
     /**
      * @ORM\Column(type="string", length=255)
-     * @Groups({"get", "post"})
+     * @Groups({"get", "put", "post"})
      * @Assert\NotBlank()
      * @Assert\Length(min=6, max=255)
      */
@@ -102,7 +114,7 @@ class User implements UserInterface
 
     /**
      * @ORM\Column(type="string", length=255)
-     * @Groups({"post", "put"})
+     * @Groups({"get", "post", "put"})
      * @Assert\NotBlank()
      * @Assert\Email()
      */
@@ -122,23 +134,33 @@ class User implements UserInterface
 
     /**
      * @ORM\Column(type="simple_array", length=200, nullable=true)
+     * @Groups({"get"})
      */
     private $roles;
 
     /**
      * @ORM\Column(type="string", length=255, nullable=true)
+     * @Groups({"get"})
      */
     private $organization;
 
     /**
      * @ORM\Column(type="boolean")
+     * @Groups({"get"})
      */
     private $enabled;
 
     /**
      * @ORM\Column(type="string", length=40, nullable=true)
+     * @Groups({"get"})
      */
     private $confirmationToken;
+
+    /**
+     * @ORM\Column(type="boolean", nullable=true)
+     * @Groups({"get"})
+     */
+    private $fullyRegistered;
 
     public function __construct()
     {
@@ -147,6 +169,7 @@ class User implements UserInterface
         $this->roles = self::DEFAULT_ROLES;
         $this->enabled = false;
         $this->confirmationToken = null;
+        $this->organization = null;
     }
 
     public function getId(): ?int
@@ -213,25 +236,6 @@ class User implements UserInterface
 
         return $this;
     }
-//
-//    public function setRoles(string $roles): ?string
-//    {
-//        $this->roles = $roles;
-//
-//        return $this;
-//    }
-//
-//    public function getOrganization()
-//    {
-//        return $this->organization;
-//    }
-//
-//    public function setOrganization(string $organization): ?string
-//    {
-//        $this->organization = $organization;
-//
-//        return $this;
-//    }
 
     /**
      * @return Collection
@@ -346,6 +350,18 @@ class User implements UserInterface
                 $comment->setAuthor(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getFullyRegistered(): ?bool
+    {
+        return $this->fullyRegistered;
+    }
+
+    public function setFullyRegistered(?bool $fullyRegistered): self
+    {
+        $this->fullyRegistered = $fullyRegistered;
 
         return $this;
     }

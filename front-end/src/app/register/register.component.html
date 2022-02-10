@@ -8,21 +8,21 @@
                 <div class="text-danger" *ngIf="err.propertyPath === 'username'">{{err.message}}</div>
             </div>
         </div>
-        <div class="form-group">
+        <div *ngIf="!alreadyPartner" class="form-group">
             <label>Name</label>
             <input formControlName="name" class="form-control" required>
             <div *ngFor="let err of errors">
                 <div class="text-danger" *ngIf="err.propertyPath === 'name'">{{err.message}}</div>
             </div>
         </div>
-        <div class="form-group">
+        <div *ngIf="!alreadyPartner" class="form-group">
             <label>E-mail</label>
             <input formControlName="email" type="email" class="form-control" placeholder="name@example.com" required>
             <div *ngFor="let err of errors">
                 <div class="text-danger" *ngIf="err.propertyPath === 'email'">{{err.message}}</div>
             </div>
         </div>
-        <div class="form-group">
+        <div *ngIf="!alreadyPartner" class="form-group">
             <label>Role</label>       
             <select class="form-control" formControlName="roles" id="exampleFormControlSelect1">
                 <option [ngValue]="null" disabled selected>Select Role</option>

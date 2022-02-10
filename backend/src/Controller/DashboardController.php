@@ -2,8 +2,13 @@
 
 namespace App\Controller;
 
+use App\Email\ConfirmationMail;
 use App\Entity\Partners;
+use App\Entity\User;
+use App\Security\AddPartnerService;
+use App\Security\TokenGenerator;
 use Doctrine\Persistence\ManagerRegistry;
+use Lcobucci\JWT\Token;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Serializer;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -15,6 +20,14 @@ use Symfony\Component\Routing\Annotation\Route;
  */
 class DashboardController extends AbstractController
 {
+    private $addPartner;
+
+    public function __construct(
+        AddPartnerService $addPartner
+    )
+    {
+        $this->addPartner = $addPartner;
+    }
 
     /**
      * @Route ("/", name="list_partners");
@@ -34,10 +47,13 @@ class DashboardController extends AbstractController
         $serializer = $this->get('serializer');
 
         $partner = $serializer->deserialize($request->getContent(), Partners::class, 'json');
+        $user = $serializer->deserialize($request->getContent(), User::class, 'json');
 
         $em = $this->getDoctrine()->getManager();
         $em->persist($partner);
         $em->flush();
+
+        $this->addPartner->addPartner($user);
 
         return $this->json($partner);
     }

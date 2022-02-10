@@ -2,9 +2,13 @@
 
 namespace App\Controller;
 
+use App\Email\ConfirmationMail;
 use App\Entity\User;
+use App\Security\TokenGenerator;
 use App\Security\UserConfirmationService;
 use Doctrine\Persistence\ManagerRegistry;
+use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
+use Symfony\Component\Serializer\Serializer;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -15,6 +19,22 @@ use Symfony\Component\Routing\Annotation\Route;
  */
 
 class DefaultController extends AbstractController{
+    private $passwordEncoder;
+    private $tokenGenerator;
+    private $mailer;
+
+    public function __construct(
+        UserPasswordEncoderInterface $passwordEncoder,
+        TokenGenerator $tokenGenerator,
+        ConfirmationMail $mailer
+    )
+    {
+
+        $this->passwordEncoder = $passwordEncoder;
+        $this->tokenGenerator = $tokenGenerator;
+        $this->mailer = $mailer;
+    }
+
     /**
      * @Route("/", name="default_index")
      */
@@ -53,8 +73,65 @@ class DefaultController extends AbstractController{
                 'name' => $user->getName(),
                 'email' => $user->getEmail(),
                 'role' => $user->getRoles(),
-                'organization' => $user->getOrganization()
+                'organization' => $user->getOrganization(),
             ],
         ]);
+    }
+
+    /**
+     * @Route("/register-partner", name="register_partner")
+     */
+    public function registerPartner(Request $request)
+    {
+        /** @var Serializer $serializer */
+        $serializer = $this->get('serializer');
+
+        $user = $serializer->deserialize($request->getContent(), User::class, 'json');
+
+        $user->setPassword(
+            $this->passwordEncoder->encodePassword($user, $user->getPassword())
+        );
+
+        $user->setConfirmationToken(
+            $this->tokenGenerator->getRandomSecureToken()
+        );
+
+        $em = $this->getDoctrine()->getManager();
+        $em->persist($user);
+        $em->flush();
+
+        $this->mailer->sendConfirmationEmail($user);
+
+        return $this->json([
+            'user_data' => [
+                'name' => $user->getName(),
+                'email' => $user->getEmail(),
+                'role' => $user->getRoles(),
+                'organization' => $user->getOrganization(),
+            ],
+        ]);
+////        if (!$user instanceof User || !in_array($method, [Request::METHOD_POST, Request::METHOD_PUT])) {
+////            return;
+////        }
+//
+//        $user->setPassword(
+//            $this->passwordEncoder->encodePassword($user, $user->getPassword())
+//        );
+//
+//        $user->setConfirmationToken(
+//            $this->tokenGenerator->getRandomSecureToken()
+//        );
+//
+//        $user->setRoles([$parameters['roles']]);
+//
+//        $this->mailer->sendConfirmationEmail($user);
+//
+//        $serializer = $this->get('serializer');
+//
+//        $user = $serializer->deserialize($request->getContent(), User::class, 'json');
+//
+//        $em = $this->getDoctrine()->getManager();
+//        $em->persist($user);
+//        $em->flush();
     }
 }

@@ -10,6 +10,16 @@ import {NgbModal, ModalDismissReasons} from '@ng-bootstrap/ng-bootstrap';
 export class NgbdModalBasic implements OnInit {
   closeResult = '';
   form!: FormGroup;
+  statuses = [
+    { id: 'ACTIVE', name: 'Active' },
+    { id: 'INACTIVE', name: 'Inactive' }
+  ];
+  roles = [
+    { id: "ROLE_SUPPLIER", name: "Supplier" },
+    { id: "ROLE_DEVELOPER", name: "Developer" },
+    { id: "ROLE_MANAGER", name: "Manager" },
+    { id: "ROLE_ADMINISTRATOR", name: "Administrator" },
+  ];
 
   @Output() newItemEvent = new EventEmitter<object>();
 
@@ -23,9 +33,10 @@ export class NgbdModalBasic implements OnInit {
       name: '',
       email: '',
       personalInfo: '',
-      role: '',
+      roles: [],
       organization: '',
-      status: '',
+      status: [],
+      fullyRegistered: false,
     })
   }
 
